@@ -1,39 +1,54 @@
-#pragma once
 #include "esphome/core/component.h"
-#include "esphome/core/sensor.h"
-#include "esphome/core/binary_sensor.h"
-#include "BMI160Gen.h"
+#include "esphome/components/i2c/i2c.h"
+#include "esphome/components/sensor/sensor.h"
 
 namespace esphome {
 namespace bmi160_pro {
 
-class BMI160Pro : public PollingComponent {
+class BMI160Pro : public PollingComponent, public i2c::I2CDevice {
  public:
-  // Raw sensors
-  Sensor *accel_x = new Sensor();
-  Sensor *accel_y = new Sensor();
-  Sensor *accel_z = new Sensor();
-  Sensor *gyro_x  = new Sensor();
-  Sensor *gyro_y  = new Sensor();
-  Sensor *gyro_z  = new Sensor();
-  Sensor *pitch   = new Sensor();
-  Sensor *roll    = new Sensor();
-  Sensor *incl    = new Sensor();
-  Sensor *temperature = new Sensor();
-  Sensor *vibration   = new Sensor();
+  void set_accel_x_sensor(sensor::Sensor *s) { accel_x_sensor_ = s; }
+  void set_accel_y_sensor(sensor::Sensor *s) { accel_y_sensor_ = s; }
+  void set_accel_z_sensor(sensor::Sensor *s) { accel_z_sensor_ = s; }
 
-  // Alerts
-  BinarySensor *tilt_alert = new BinarySensor();
-  BinarySensor *motion_alert = new BinarySensor();
+  void set_gyro_x_sensor(sensor::Sensor *s) { gyro_x_sensor_ = s; }
+  void set_gyro_y_sensor(sensor::Sensor *s) { gyro_y_sensor_ = s; }
+  void set_gyro_z_sensor(sensor::Sensor *s) { gyro_z_sensor_ = s; }
 
-  // Config values
-  float tilt_threshold_deg = 10.0f;        // Default angle threshold
-  float motion_threshold_ms2 = 1.0f;       // Default vibration threshold
+  void set_pitch_sensor(sensor::Sensor *s) { pitch_sensor_ = s; }
+  void set_roll_sensor(sensor::Sensor *s) { roll_sensor_ = s; }
+  void set_inclination_sensor(sensor::Sensor *s) { inclination_sensor_ = s; }
 
-  BMI160Pro() : PollingComponent(50) {}    // 50ms update (20Hz)
+  void set_temperature_sensor(sensor::Sensor *s) { temperature_sensor_ = s; }
+  void set_vibration_sensor(sensor::Sensor *s) { vibration_sensor_ = s; }
+
+  void set_tilt_threshold_deg(float v) { tilt_threshold_deg_ = v; }
+  void set_motion_threshold_ms2(float v) { motion_threshold_ms2_ = v; }
+  void set_vibration_threshold_ms2(float v) { vibration_threshold_ms2_ = v; }
 
   void setup() override;
   void update() override;
+  float get_setup_priority() const override { return setup_priority::DATA; }
+
+ protected:
+  sensor::Sensor *accel_x_sensor_{nullptr};
+  sensor::Sensor *accel_y_sensor_{nullptr};
+  sensor::Sensor *accel_z_sensor_{nullptr};
+
+  sensor::Sensor *gyro_x_sensor_{nullptr};
+  sensor::Sensor *gyro_y_sensor_{nullptr};
+  sensor::Sensor *gyro_z_sensor_{nullptr};
+
+  sensor::Sensor *pitch_sensor_{nullptr};
+  sensor::Sensor *roll_sensor_{nullptr};
+  sensor::Sensor *inclination_sensor_{nullptr};
+
+  sensor::Sensor *temperature_sensor_{nullptr};
+  sensor::Sensor *vibration_sensor_{nullptr};
+
+  float tilt_threshold_deg_{15.0f};
+  float motion_threshold_ms2_{0.3f};
+  float vibration_threshold_ms2_{0.5f};
 };
 
 }  // namespace bmi160_pro
