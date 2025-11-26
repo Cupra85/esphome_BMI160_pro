@@ -1,3 +1,5 @@
+#pragma once
+
 #include "esphome/core/component.h"
 #include "esphome/components/i2c/i2c.h"
 #include "esphome/components/sensor/sensor.h"
@@ -7,6 +9,12 @@ namespace bmi160_pro {
 
 class BMI160Pro : public PollingComponent, public i2c::I2CDevice {
  public:
+  // ----- Standard ESPHome Hooks -----
+  void setup() override;
+  void update() override;
+  float get_setup_priority() const override { return setup_priority::DATA; }
+
+  // ----- Sensor Setter -----
   void set_accel_x_sensor(sensor::Sensor *s) { accel_x_sensor_ = s; }
   void set_accel_y_sensor(sensor::Sensor *s) { accel_y_sensor_ = s; }
   void set_accel_z_sensor(sensor::Sensor *s) { accel_z_sensor_ = s; }
@@ -22,15 +30,13 @@ class BMI160Pro : public PollingComponent, public i2c::I2CDevice {
   void set_temperature_sensor(sensor::Sensor *s) { temperature_sensor_ = s; }
   void set_vibration_sensor(sensor::Sensor *s) { vibration_sensor_ = s; }
 
+  // ----- Threshold Setter (from YAML) -----
   void set_tilt_threshold_deg(float v) { tilt_threshold_deg_ = v; }
   void set_motion_threshold_ms2(float v) { motion_threshold_ms2_ = v; }
   void set_vibration_threshold_ms2(float v) { vibration_threshold_ms2_ = v; }
 
-  void setup() override;
-  void update() override;
-  float get_setup_priority() const override { return setup_priority::DATA; }
-
  protected:
+  // ----- Output Sensors -----
   sensor::Sensor *accel_x_sensor_{nullptr};
   sensor::Sensor *accel_y_sensor_{nullptr};
   sensor::Sensor *accel_z_sensor_{nullptr};
@@ -46,9 +52,13 @@ class BMI160Pro : public PollingComponent, public i2c::I2CDevice {
   sensor::Sensor *temperature_sensor_{nullptr};
   sensor::Sensor *vibration_sensor_{nullptr};
 
+  // ----- Threshold Parameters -----
   float tilt_threshold_deg_{15.0f};
   float motion_threshold_ms2_{0.3f};
   float vibration_threshold_ms2_{0.5f};
+
+  // ----- Internal values -----
+  float temperature_{0.0f};
 };
 
 }  // namespace bmi160_pro
