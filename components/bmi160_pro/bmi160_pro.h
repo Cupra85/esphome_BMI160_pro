@@ -13,7 +13,7 @@ class BMI160Pro : public PollingComponent, public i2c::I2CDevice {
   void update() override;
   float get_setup_priority() const override { return setup_priority::DATA; }
 
-  // Sensor setter
+  // Sensor Setter
   void set_accel_x_sensor(sensor::Sensor *s) { accel_x_sensor_ = s; }
   void set_accel_y_sensor(sensor::Sensor *s) { accel_y_sensor_ = s; }
   void set_accel_z_sensor(sensor::Sensor *s) { accel_z_sensor_ = s; }
@@ -26,14 +26,15 @@ class BMI160Pro : public PollingComponent, public i2c::I2CDevice {
   void set_temperature_sensor(sensor::Sensor *s) { temperature_sensor_ = s; }
   void set_vibration_sensor(sensor::Sensor *s) { vibration_sensor_ = s; }
 
-  // Binary sensors
+  // Binary setter
   void set_tilt_alert(binary_sensor::BinarySensor *b) { tilt_alert_ = b; }
   void set_motion_alert(binary_sensor::BinarySensor *b) { motion_alert_ = b; }
 
-  // Threshold setter
+  // Parameters
   void set_tilt_threshold_deg(float v) { tilt_threshold_deg_ = v; }
   void set_motion_threshold_ms2(float v) { motion_threshold_ms2_ = v; }
   void set_vibration_threshold_ms2(float v) { vibration_threshold_ms2_ = v; }
+  void set_filter_alpha(float a) { filter_alpha_ = a; }
 
  protected:
   // Outputs
@@ -49,7 +50,6 @@ class BMI160Pro : public PollingComponent, public i2c::I2CDevice {
   sensor::Sensor *temperature_sensor_{nullptr};
   sensor::Sensor *vibration_sensor_{nullptr};
 
-  // Binary outputs
   binary_sensor::BinarySensor *tilt_alert_{nullptr};
   binary_sensor::BinarySensor *motion_alert_{nullptr};
 
@@ -57,8 +57,14 @@ class BMI160Pro : public PollingComponent, public i2c::I2CDevice {
   float tilt_threshold_deg_{15.0f};
   float motion_threshold_ms2_{0.3f};
   float vibration_threshold_ms2_{0.5f};
+  float filter_alpha_{0.98f};
 
   float temperature_{0.0f};
+
+  // Filter state
+  float pitch_filt_{0.0f};
+  float roll_filt_{0.0f};
+  uint32_t last_time_{0};
 };
 
 }  // namespace bmi160_pro
