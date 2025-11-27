@@ -36,7 +36,7 @@ CONFIG_SCHEMA = (
             cv.Optional("motion_threshold_ms2", default=0.3): cv.float_,
             cv.Optional("vibration_threshold_ms2", default=0.5): cv.float_,
 
-            # Filter Parameter optional
+            # Complementary Filter Parameter
             cv.Optional("filter_alpha", default=0.98): cv.float_range(min=0.80, max=0.999),
         }
     )
@@ -55,7 +55,7 @@ async def to_code(config):
     cg.add(var.set_vibration_threshold_ms2(config["vibration_threshold_ms2"]))
     cg.add(var.set_filter_alpha(config["filter_alpha"]))
 
-    # Normal sensors (robuste Übergabe)
+    # Normal sensor assignment + automatic ID fix
     for key in config:
         if key in ["id", "tilt_threshold_deg", "motion_threshold_ms2", "vibration_threshold_ms2", "filter_alpha"]:
             continue
@@ -63,8 +63,15 @@ async def to_code(config):
             continue
 
         value = config[key]
+
+        # If user only writes a string → make it a dict
         if isinstance(value, str):
             value = {"name": value}
+
+        # If the user provides a dict without id → auto generate
+        if "id" not in value:
+            value["id"] = f"{config[CONF_ID]}_{key}"
+
         sens = await sensor.new_sensor(value)
         cg.add(getattr(var, f"set_{key}_sensor")(sens))
 
@@ -72,6 +79,7 @@ async def to_code(config):
     if "tilt_alert" in config:
         b = await binary_sensor.new_binary_sensor(config["tilt_alert"])
         cg.add(var.set_tilt_alert(b))
+
     if "motion_alert" in config:
         b = await binary_sensor.new_binary_sensor(config["motion_alert"])
         cg.add(var.set_motion_alert(b))
