@@ -14,7 +14,6 @@ CONFIG_SCHEMA = (
         {
             cv.GenerateID(CONF_ID): cv.declare_id(BMI160Pro),
 
-            # Sensor outputs
             cv.Optional("accel_x"): S_SIMPLE,
             cv.Optional("accel_y"): S_SIMPLE,
             cv.Optional("accel_z"): S_SIMPLE,
@@ -27,16 +26,12 @@ CONFIG_SCHEMA = (
             cv.Optional("temperature"): S_SIMPLE,
             cv.Optional("vibration"): S_SIMPLE,
 
-            # Binary alert outputs
             cv.Optional("tilt_alert"): B_SIMPLE,
             cv.Optional("motion_alert"): B_SIMPLE,
 
-            # Thresholds
             cv.Optional("tilt_threshold_deg", default=15.0): cv.float_,
             cv.Optional("motion_threshold_ms2", default=0.3): cv.float_,
             cv.Optional("vibration_threshold_ms2", default=0.5): cv.float_,
-
-            # Complementary Filter Parameter
             cv.Optional("filter_alpha", default=0.98): cv.float_range(min=0.80, max=0.999),
         }
     )
@@ -44,42 +39,55 @@ CONFIG_SCHEMA = (
     .extend(cv.polling_component_schema("5s"))
 )
 
+
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await i2c.register_i2c_device(var, config)
 
-    # Thresholds
     cg.add(var.set_tilt_threshold_deg(config["tilt_threshold_deg"]))
     cg.add(var.set_motion_threshold_ms2(config["motion_threshold_ms2"]))
     cg.add(var.set_vibration_threshold_ms2(config["vibration_threshold_ms2"]))
     cg.add(var.set_filter_alpha(config["filter_alpha"]))
 
-    # Normal sensor assignment + automatic ID fix
-    for key in config:
-        if key in ["id", "tilt_threshold_deg", "motion_threshold_ms2", "vibration_threshold_ms2", "filter_alpha"]:
-            continue
-        if key in ["tilt_alert", "motion_alert"]:
-            continue
+    # Normal float sensors
+    float_sensors = [
+        "accel_x", "accel_y", "accel_z",
+        "gyro_x", "gyro_y", "gyro_z",
+        "pitch", "roll", "inclination",
+        "temperature", "vibration"
+    ]
 
-        value = config[key]
+    for key in float_sensors:
+        if key in config:
+            cfg = config[key]
 
-        # If user only writes a string → make it a dict
-        if isinstance(value, str):
-            value = {"name": value}
+            # Falls YAML nur "pitch: Name" enthält
+            if isinstance(cfg, str):
+                cfg = {"name": cfg}
 
-        # If the user provides a dict without id → auto generate
-        if "id" not in value:
-            value["id"] = f"{config[CONF_ID]}_{key}"
+            # Wenn keine ID existiert → ID generieren
+            if "id" not in cfg:
+                cfg["id"] = f"{config[CONF_ID]}_{key}"
 
-        sens = await sensor.new_sensor(value)
-        cg.add(getattr(var, f"set_{key}_sensor")(sens))
+            sens = await sensor.new_sensor(cfg)
+            cg.add(getattr(var, f"set_{key}_sensor")(sens))
 
     # Binary sensors
     if "tilt_alert" in config:
-        b = await binary_sensor.new_binary_sensor(config["tilt_alert"])
+        cfg = config["tilt_alert"]
+        if isinstance(cfg, str):
+            cfg = {"name": cfg}
+        if "id" not in cfg:
+            cfg["id"] = f"{config[CONF_ID]}_tilt_alert"
+        b = await binary_sensor.new_binary_sensor(cfg)
         cg.add(var.set_tilt_alert(b))
 
     if "motion_alert" in config:
-        b = await binary_sensor.new_binary_sensor(config["motion_alert"])
+        cfg = config["motion_alert"]
+        if isinstance(cfg, str):
+            cfg = {"name": cfg}
+        if "id" not in cfg:
+            cfg["id"] = f"{config[CONF_ID]}_motion_alert"
+        b = await binary_sensor.new_binary_sensor(cfg)
         cg.add(var.set_motion_alert(b))
